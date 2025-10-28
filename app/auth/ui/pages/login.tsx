@@ -1,18 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  InteractionManager,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/auth_context';
 
 
@@ -43,6 +45,7 @@ const LoginPage = () => {
 
   const authUseCase = useAuth();
   const { login, signUp, error } = useAuthController(authUseCase);
+  const router = useRouter();
 
   const colorAnimation = useSharedValue(isLogin ? 1 : 0);
 
@@ -76,6 +79,9 @@ const LoginPage = () => {
       console.log(`User chose to stay logged in: ${stayLoggedIn}`);
       await login({ email, password });
       Alert.alert("Success", "Login successful");
+      InteractionManager.runAfterInteractions(() => {
+        router.replace('/(tabs)');
+      });
     } catch (err: any) {
       Alert.alert("Error", err.toString());
     }
@@ -91,6 +97,10 @@ const LoginPage = () => {
       Alert.alert("Success", "User created successfully");
       clearAllFields();
       handleTabPress(true);
+      // signUp awaits login internally when success, navigate to tabs after interactions
+      InteractionManager.runAfterInteractions(() => {
+        router.replace('/(tabs)');
+      });
     } catch (err: any) {
       Alert.alert("Error", err.toString());
     }

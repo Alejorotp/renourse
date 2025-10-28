@@ -1,13 +1,18 @@
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Button, InteractionManager, Platform, StyleSheet } from 'react-native';
 
+import { useAuth } from '@/app/auth/context/auth_context';
+import { useAuthController } from '@/app/auth/ui/controller/auth_controller';
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 
 export default function HomeScreen() {
+  const authUseCase = useAuth();
+  const { logout } = useAuthController(authUseCase);
+  const router = useRouter();
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -20,6 +25,21 @@ export default function HomeScreen() {
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
+      </ThemedView>
+      <ThemedView style={styles.stepContainer}>
+        <Button
+          title="Logout"
+          onPress={async () => {
+            try {
+              await logout();
+              InteractionManager.runAfterInteractions(() => {
+                router.replace('/modal');
+              });
+            } catch (e) {
+              // noop: controller handles errors
+            }
+          }}
+        />
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>

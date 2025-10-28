@@ -8,16 +8,27 @@ export const useAuthController = (authUseCase: AuthenticationUseCase) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+
+
   useEffect(() => {
-    const checkToken = async () => {
+    checkToken();
+    checkUser();
+  }, [authUseCase]);
+
+  const checkToken = async () => {
+    try {
       const isValid = await authUseCase.verifyToken();
       setIsLoggedIn(isValid);
       if (!isValid) {
         const refreshed = await authUseCase.refreshToken();
         setIsLoggedIn(refreshed);
       }
-    };
-    const checkUser = async () => {
+    } catch (e) {
+      setIsLoggedIn(false);
+    }
+  };
+  const checkUser = async () => {
+    try {
       const tokenValid = await authUseCase.verifyToken();
       if (tokenValid) {
         const storedUser = await SecureStore.getItemAsync('user');
@@ -25,10 +36,10 @@ export const useAuthController = (authUseCase: AuthenticationUseCase) => {
           setUser(JSON.parse(storedUser));
         }
       }
-    };
-    checkToken();
-    checkUser();
-  }, [authUseCase]);
+    } catch (e) {
+      setUser(null);
+    }
+  };
 
   const login = async (user: LoginAuthenticationUser) => {
     try {
@@ -64,6 +75,9 @@ export const useAuthController = (authUseCase: AuthenticationUseCase) => {
     user,
     isLoggedIn,
     error,
+    // Expose checks so consumers (e.g., modal) can invoke them on mount
+    checkToken,
+    checkUser,
     login,
     signUp,
     logout,

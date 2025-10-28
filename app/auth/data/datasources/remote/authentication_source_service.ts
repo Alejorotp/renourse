@@ -65,6 +65,7 @@ export class AuthenticationSourceService implements IAuthenticationSource {
     console.log('Attempting logout');
     await SecureStore.deleteItemAsync('token');
     await SecureStore.deleteItemAsync('refreshToken');
+    await SecureStore.deleteItemAsync('user');
     return true;
   }
 
