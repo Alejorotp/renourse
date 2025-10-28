@@ -101,7 +101,7 @@ export class AuthenticationSourceService implements IAuthenticationSource {
     console.log('Attempting token refresh');
     const refreshToken = await SecureStore.getItemAsync('refreshToken');
     if (!refreshToken) {
-      console.error('No refresh token found');
+      console.warn('Skipping token refresh: no refresh token found');
       return false;
     }
 

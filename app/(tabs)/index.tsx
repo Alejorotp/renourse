@@ -1,18 +1,15 @@
 import { Image } from 'expo-image';
-import { Button, InteractionManager, Platform, StyleSheet } from 'react-native';
+import { Alert, Button, Platform, StyleSheet } from 'react-native';
 
-import { useAuth } from '@/app/auth/context/auth_context';
-import { useAuthController } from '@/app/auth/ui/controller/auth_controller';
+import { useAuthSession } from '@/auth/context/auth_context';
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link, useRouter } from 'expo-router';
+import React from 'react';
 
 export default function HomeScreen() {
-  const authUseCase = useAuth();
-  const { logout } = useAuthController(authUseCase);
-  const router = useRouter();
+  const { logout, isLoading } = useAuthSession();
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -28,17 +25,16 @@ export default function HomeScreen() {
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <Button
-          title="Logout"
+          title={isLoading ? 'Signing out…' : 'Logout'}
           onPress={async () => {
             try {
               await logout();
-              InteractionManager.runAfterInteractions(() => {
-                router.replace('/modal');
-              });
-            } catch (e) {
-              // noop: controller handles errors
+            } catch (e: any) {
+              const message = e?.message ?? 'Unexpected error while signing out.';
+              Alert.alert('Logout failed', message);
             }
           }}
+          disabled={isLoading}
         />
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
@@ -54,34 +50,6 @@ export default function HomeScreen() {
             })}
           </ThemedText>{' '}
           to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
-
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
         </ThemedText>
       </ThemedView>
       <ThemedView style={styles.stepContainer}>

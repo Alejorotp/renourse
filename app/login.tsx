@@ -1,8 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
-  InteractionManager,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -10,15 +9,12 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { useRouter } from 'expo-router';
-import { useAuth } from '../../context/auth_context';
-
-
-import { useAuthController } from '../controller/auth_controller';
+import { Redirect } from 'expo-router';
+import { useAuthSession } from '../auth/context/auth_context';
 
 const lilac = 'rgba(124, 77, 255, 1)';
 const blue = 'rgba(43, 213, 243, 1)';
@@ -36,16 +32,13 @@ const TextFieldGeneral = ({ labelText, value, onChangeText, keyboardType = 'defa
     />
   </View>
 );
-
-const LoginPage = () => {
+ 
+export default function LoginPage() {
+  
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userName, setUserName] = useState('');
-
-  const authUseCase = useAuth();
-  const { login, signUp, error } = useAuthController(authUseCase);
-  const router = useRouter();
 
   const colorAnimation = useSharedValue(isLogin ? 1 : 0);
 
@@ -55,11 +48,21 @@ const LoginPage = () => {
     };
   });
 
-  const animatedButtonStyle = useAnimatedStyle(() => {
+    const animatedButtonStyle = useAnimatedStyle(() => {
     return {
       backgroundColor: colorAnimation.value === 1 ? lilac : blue,
     };
   });
+
+  const { login, signUp, error, isLoggedIn, user, checkLoggedIn, isLoading } = useAuthSession();
+
+  useEffect(() => {
+    checkLoggedIn();
+  }, [checkLoggedIn]);
+
+  if (isLoggedIn && user) {
+    return <Redirect href="/home" />;
+  }
 
   const clearAllFields = () => {
     setEmail('');
@@ -79,11 +82,9 @@ const LoginPage = () => {
       console.log(`User chose to stay logged in: ${stayLoggedIn}`);
       await login({ email, password });
       Alert.alert("Success", "Login successful");
-      InteractionManager.runAfterInteractions(() => {
-        router.replace('/(tabs)');
-      });
     } catch (err: any) {
-      Alert.alert("Error", err.toString());
+      const message = err instanceof Error ? err.message : err?.toString?.() ?? 'Login failed';
+      Alert.alert("Error", message);
     }
   };
 
@@ -97,12 +98,9 @@ const LoginPage = () => {
       Alert.alert("Success", "User created successfully");
       clearAllFields();
       handleTabPress(true);
-      // signUp awaits login internally when success, navigate to tabs after interactions
-      InteractionManager.runAfterInteractions(() => {
-        router.replace('/(tabs)');
-      });
     } catch (err: any) {
-      Alert.alert("Error", err.toString());
+      const message = err instanceof Error ? err.message : err?.toString?.() ?? 'Sign up failed';
+      Alert.alert("Error", message);
     }
   };
 
@@ -161,9 +159,11 @@ const LoginPage = () => {
           <TextFieldGeneral labelText="Username" value={userName} onChangeText={setUserName} />
         )}
 
-        <TouchableOpacity onPress={handleAuthAction}>
-          <Animated.View style={[styles.button, animatedButtonStyle]}>
-            <Text style={styles.buttonText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
+        <TouchableOpacity onPress={handleAuthAction} disabled={isLoading}>
+          <Animated.View style={[styles.button, animatedButtonStyle, isLoading && styles.buttonDisabled]}>
+            <Text style={styles.buttonText}>
+              {isLoading ? 'Please wait…' : isLogin ? 'Sign In' : 'Sign Up'}
+            </Text>
           </Animated.View>
         </TouchableOpacity>
         {error && <Text style={styles.errorText}>{error}</Text>}
@@ -229,6 +229,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginTop: 30,
   },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
   buttonText: {
     color: 'white',
     fontSize: 16,
@@ -238,5 +241,3 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
-
-export default LoginPage;
