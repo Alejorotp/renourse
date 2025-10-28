@@ -1,6 +1,13 @@
+import { AuthenticationUser, LoginAuthenticationUser, SignupAuthenticationUser } from '../../domain/models/authentication_user';
+
 export interface IAuthenticationSource {
-  login(email: string, password: string): Promise<any>;
-  signUp(email: string, password: string, userName: string): Promise<any>;
-  logout(): Promise<void>;
-  // Add other methods if needed
+  login(user: LoginAuthenticationUser): Promise<AuthenticationUser>;
+  signUp(user: SignupAuthenticationUser): Promise<boolean>;
+  logOut(): Promise<boolean>;
+  validate(email: string, validationCode: string): Promise<boolean>;
+  refreshToken2(rToken: string): Promise<string | null>;
+  refreshToken(): Promise<boolean>;
+  forgotPassword(email: string): Promise<boolean>;
+  resetPassword(email: string, newPassword: string, validationCode: string): Promise<boolean>;
+  verifyToken(accessToken: string): Promise<boolean>;
 }

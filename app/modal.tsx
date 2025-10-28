@@ -13,6 +13,8 @@ export default function Central() {
     // For now, we'll just rely on the in-memory state
   }, []);
 
+  console.log('Central Component - isLoggedIn:', isLoggedIn, 'user:', user);
+
   if (isLoggedIn && user) {
     return <Redirect href="/(tabs)" />;
   } else {

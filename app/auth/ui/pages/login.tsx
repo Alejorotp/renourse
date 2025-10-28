@@ -74,7 +74,7 @@ const LoginPage = () => {
     try {
       // In a real app, you'd use a secure storage for the token if stayLoggedIn is true
       console.log(`User chose to stay logged in: ${stayLoggedIn}`);
-      await login(email, password);
+      await login({ email, password });
       Alert.alert("Success", "Login successful");
     } catch (err: any) {
       Alert.alert("Error", err.toString());
@@ -87,7 +87,7 @@ const LoginPage = () => {
       return;
     }
     try {
-      await signUp(email, password, userName);
+      await signUp({ email, password, name: userName });
       Alert.alert("Success", "User created successfully");
       clearAllFields();
       handleTabPress(true);

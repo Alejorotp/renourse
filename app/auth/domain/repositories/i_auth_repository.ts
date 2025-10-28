@@ -1,8 +1,12 @@
-import { AuthenticationUser } from '../models/authentication_user';
+import { AuthenticationUser, LoginAuthenticationUser, SignupAuthenticationUser } from '../models/authentication_user';
 
 export interface IAuthRepository {
-  login(email: string, password: string): Promise<AuthenticationUser>;
-  signUp(email: string, password: string, userName: string): Promise<AuthenticationUser>;
-  logout(): Promise<void>;
-  // Add other methods like signUp, etc. if needed
+  login(user: LoginAuthenticationUser): Promise<AuthenticationUser>;
+  signUp(user: SignupAuthenticationUser): Promise<boolean>;
+  logOut(): Promise<boolean>;
+  validate(email: string, validationCode: string): Promise<boolean>;
+  refreshToken(): Promise<boolean>;
+  forgotPassword(email: string): Promise<boolean>;
+  resetPassword(email: string, newPassword: string, validationCode: string): Promise<boolean>;
+  verifyToken(): Promise<boolean>;
 }
