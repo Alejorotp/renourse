@@ -1,29 +1,21 @@
-import { Link } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Redirect } from 'expo-router';
+import React, { useEffect } from 'react';
+import { useAuth } from './auth/context/auth_context';
+import { useAuthController } from './auth/ui/controller/auth_controller';
+import LoginPage from './auth/ui/pages/login';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+export default function Central() {
+  const authUseCase = useAuth();
+  const { isLoggedIn, user } = useAuthController(authUseCase);
 
-export default function ModalScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">This is a modal</ThemedText>
-      <Link href="/" dismissTo style={styles.link}>
-        <ThemedText type="link">Go to home screen</ThemedText>
-      </Link>
-    </ThemedView>
-  );
+  useEffect(() => {
+    // Here you would typically check for a stored token and validate it
+    // For now, we'll just rely on the in-memory state
+  }, []);
+
+  if (isLoggedIn && user) {
+    return <Redirect href="/(tabs)" />;
+  } else {
+    return <LoginPage />;
+  }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-});
