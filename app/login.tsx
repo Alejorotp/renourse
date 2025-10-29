@@ -1,20 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { Redirect } from 'expo-router';
 import { useAuthSession } from '../auth/context/auth_context';
+import { SafeTop } from '../components/ui/safe-top';
 
 const lilac = 'rgba(124, 77, 255, 1)';
 const blue = 'rgba(43, 213, 243, 1)';
@@ -141,6 +142,7 @@ export default function LoginPage() {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      <SafeTop />
       <ScrollView contentContainerStyle={styles.container}>
         <Animated.View style={[{ marginBottom: 10 }]}>
           <Ionicons name="school" size={60} style={animatedIconStyle} />

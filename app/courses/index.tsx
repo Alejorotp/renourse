@@ -9,6 +9,7 @@ import JoinCourseDialog from '@/components/courses/join_course_dialog';
 import RoleToggleButtons from '@/components/courses/role_toggle_buttons';
 import CourseCard from '@/components/home/course_card';
 import { useCourses } from '@/courses/context/course_context';
+import { SafeTop } from '../../components/ui/safe-top';
 
 const lilac = 'rgba(124, 77, 255, 1)';
 const blue = 'rgba(43, 213, 243, 1)';
@@ -35,6 +36,7 @@ export default function CoursesPage() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F4FA' }}>
+      <SafeTop />
       <View style={styles.appBar}>
         <Text style={styles.appBarTitle}>Flourse</Text>
       </View>

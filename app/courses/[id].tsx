@@ -9,6 +9,7 @@ import MemberCard from '@/components/courses/member_card';
 import NavItem from '@/components/courses/nav_item';
 import ProfessorBox from '@/components/courses/professor_box';
 import { useCourses } from '@/courses/context/course_context';
+import { SafeTop } from '../../components/ui/safe-top';
 
 export default function CurrentCoursePage() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,6 +36,7 @@ export default function CurrentCoursePage() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F4FA' }}>
+      <SafeTop />
       <View style={styles.appBar}>
         <Text style={styles.appBarTitle}>{title}</Text>
       </View>

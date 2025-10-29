@@ -5,6 +5,7 @@ import { Button, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 're
 import { useAuth, useAuthSession } from '@/auth/context/auth_context';
 import { useAuthController } from '@/auth/controller/auth_controller';
 import { useCourses } from '@/courses/context/course_context';
+import { SafeTop } from '../components/ui/safe-top';
 
 // Importa los componentes traducidos
 import CreateCourseDialog from '@/components/courses/create_course_dialog';
@@ -43,6 +44,7 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F4FA' }}>
+      <SafeTop />
       <View style={styles.appBar}>
         <Text style={styles.appBarTitle}>Flourse</Text>
         <Button title="Cerrar sesión" onPress={async () => {
