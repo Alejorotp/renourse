@@ -4,8 +4,8 @@ import { useGroups } from '@/groups/context/group_context';
 import { Group } from '@/groups/domain/models/group';
 import { getUserNameById } from '@/shared/utils/user_utils';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Alert,
     FlatList,
@@ -17,16 +17,43 @@ import {
 
 export default function GroupDetailPage() {
   const params = useLocalSearchParams();
+  const router = useRouter();
   const { removeMemberFromGroup, getAllGroups } = useGroups();
 
   // Parse params
-  const group: Group = params.group ? JSON.parse(params.group as string) : null;
-  const category: Category = params.category ? JSON.parse(params.category as string) : null;
+  const idParam = Array.isArray(params.id) ? params.id[0] : (params.id as string | undefined);
+  const hasGroupJson = typeof params.group === 'string' && params.group.length > 2;
+  const hasCategoryJson = typeof params.category === 'string' && params.category.length > 2;
+  const group: Group = hasGroupJson ? JSON.parse(params.group as string) : null;
+  const category: Category = hasCategoryJson ? JSON.parse(params.category as string) : null;
   const canEdit = params.canEdit === 'true';
   const groupIndex = params.groupIndex || '1';
 
   const [memberNames, setMemberNames] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    console.log('[GroupDetailPage] mounted with params', params);
+  }, [params]);
+
+  // Safety redirect: if we got here with id = "index" or missing group/category, go back to the list view
+  const redirectedOnce = useRef(false);
+  useEffect(() => {
+    const shouldRedirect = (idParam === 'index') || !hasGroupJson || !hasCategoryJson;
+    if (shouldRedirect && !redirectedOnce.current) {
+      redirectedOnce.current = true;
+      console.warn('[GroupDetailPage] Invalid params for detail, redirecting to /groups', { idParam, hasGroupJson, hasCategoryJson });
+      router.replace({
+        pathname: '/groups' as any,
+        params: {
+          category: (params.category as string) ?? '',
+          canEdit: String(params.canEdit ?? 'false'),
+          groupNumber: String(params.groupNumber ?? '0'),
+          redirectMessage: 'Te hemos redirigido a la lista de grupos.',
+        },
+      });
+    }
+  }, [idParam, hasGroupJson, hasCategoryJson, router, params.category, params.canEdit, params.groupNumber]);
 
   useEffect(() => {
     if (group) {
@@ -105,7 +132,8 @@ export default function GroupDetailPage() {
     );
   };
 
-  if (!group || !category) {
+  if (!group || !category || idParam === 'index') {
+    // We already triggered a replace to the list; render nothing while navigating.
     return (
       <View style={styles.container}>
         <SafeTop backgroundColor="#fff" />

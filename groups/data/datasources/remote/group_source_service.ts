@@ -158,8 +158,9 @@ export class GroupSourceService implements IGroupSource {
       );
 
       if (response.status === 200) {
-        const jsonList = await response.json();
-        console.log('[GroupSourceService] getAllGroups ← groups', Array.isArray(jsonList) ? jsonList.length : 'n/a');
+  const jsonList = await response.json();
+  const rawCount = Array.isArray(jsonList) ? jsonList.length : 0;
+  console.log('[GroupSourceService] getAllGroups ← raw count', rawCount);
 
         const fetchedGroups: Group[] = [];
         for (const data of jsonList) {
@@ -186,8 +187,9 @@ export class GroupSourceService implements IGroupSource {
           
           console.log('[GroupSourceService] group mapped', group.id, group.memberIDs.length);
           fetchedGroups.push(group);
-        }
-        return fetchedGroups;
+  }
+  console.log('[GroupSourceService] getAllGroups mapped count', fetchedGroups.length);
+  return fetchedGroups;
       } else {
         console.error('[GroupSourceService] getAllGroups failed:', response.status);
         return [];
@@ -257,6 +259,20 @@ export class GroupSourceService implements IGroupSource {
   async joinGroup(groupId: string, userId: string): Promise<boolean> {
     console.log('User with ID:', userId, 'joining group with ID:', groupId);
     try {
+      // Prevent duplicate membership: check if the relation already exists
+      const existsRes = await this.get(
+        `${API_BASE_URL}/${DATABASE_NAME}/read?tableName=GroupMember&groupID=${encodeURIComponent(groupId)}&userID=${encodeURIComponent(userId)}`
+      );
+      if (existsRes.ok) {
+        const existing = await existsRes.json();
+        if (Array.isArray(existing) && existing.length > 0) {
+          console.log('[GroupSourceService] joinGroup: membership already exists, no-op');
+          return true; // treat as success
+        }
+      } else {
+        console.warn('[GroupSourceService] joinGroup: existence check failed', existsRes.status);
+      }
+
       const response = await this.post(
         `${API_BASE_URL}/${DATABASE_NAME}/insert`,
         {

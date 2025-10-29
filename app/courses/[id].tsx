@@ -103,8 +103,10 @@ export default function CurrentCoursePage() {
                         }
                       }}
                       onPress={() => {
+                        console.log('[CurrentCoursePage] navigate → /groups with category', cat.id);
                         router.push({
-                          pathname: '/groups/index',
+                          // Use segment root to reliably hit index route
+                          pathname: '/groups' as any,
                           params: {
                             category: JSON.stringify(cat),
                             canEdit: String(isProfessor),

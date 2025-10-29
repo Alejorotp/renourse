@@ -25,9 +25,11 @@ export default function GroupsPage() {
   const category: Category = params.category ? JSON.parse(params.category as string) : null;
   const canEdit = params.canEdit === 'true';
   const groupNumber = parseInt(params.groupNumber as string) || 0;
+  const redirectMessage = typeof params.redirectMessage === 'string' ? (params.redirectMessage as string) : undefined;
 
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [banner, setBanner] = useState<string | undefined>(redirectMessage);
 
   useEffect(() => {
     if (category?.id) {
@@ -35,9 +37,18 @@ export default function GroupsPage() {
     }
   }, [category?.id]);
 
+  // Show banner if redirected here from invalid detail page
+  useEffect(() => {
+    if (redirectMessage) {
+      setBanner(redirectMessage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [redirectMessage]);
+
   const loadGroups = async () => {
     setLoading(true);
     try {
+      console.log('[GroupsPage] loadGroups → category', category.id);
       await getAllGroups(category.id!);
     } catch (error) {
       console.error('Error loading groups:', error);
@@ -112,6 +123,13 @@ export default function GroupsPage() {
   };
 
   const filteredGroups = groups.filter((g) => g.categoryID === category?.id);
+  useEffect(() => {
+    if (category?.id) {
+      const count = filteredGroups.length;
+      console.log('[GroupsPage] groups updated for category', category.id, '→', count);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category?.id, filteredGroups.length]);
   const userInGroup = filteredGroups.some((g) => g.memberIDs.includes(String(user?.id || '')));
 
   const renderGroupCard = ({ item, index }: { item: Group; index: number }) => {
@@ -173,6 +191,14 @@ export default function GroupsPage() {
       <Stack.Screen options={{ title: `Grupos de ${category.name}` }} />
 
       <View style={styles.content}>
+        {banner && (
+          <View style={styles.banner}>
+            <Text style={styles.bannerText}>{banner}</Text>
+            <TouchableOpacity style={styles.bannerClose} onPress={() => setBanner(undefined)}>
+              <Ionicons name="close" size={18} color="#333" />
+            </TouchableOpacity>
+          </View>
+        )}
         <Text style={styles.sectionTitle}>Lista de Grupos</Text>
 
         {canEdit && (
@@ -226,6 +252,24 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
+  },
+  banner: {
+    backgroundColor: '#FFF4D6',
+    borderColor: '#FDD26E',
+    borderWidth: 1,
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bannerText: {
+    color: '#7A5B00',
+    flex: 1,
+  },
+  bannerClose: {
+    paddingLeft: 8,
+    paddingVertical: 2,
   },
   sectionTitle: {
     fontSize: 18,

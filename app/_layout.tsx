@@ -27,10 +27,11 @@ export default function RootLayout() {
                 <Stack.Screen name="home" options={{ headerShown: false }} />
                 <Stack.Screen name="modal" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="courses/[id]" options={{ headerShown: false }} />
+                {/* Put index before dynamic to avoid /groups/index being captured as id = "index" */}
                 <Stack.Screen name="courses/index" options={{ headerShown: false }} />
-                <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="courses/[id]" options={{ headerShown: false }} />
                 <Stack.Screen name="groups/index" options={{ headerShown: false }} />
+                <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
               </Stack>
               <StatusBar style="auto" />
             </ThemeProvider>

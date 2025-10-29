@@ -51,9 +51,10 @@ export class GroupController {
   }
 
   async getAllGroups(categoryId: string): Promise<Group[]> {
+    console.log('[GroupController] getAllGroups →', categoryId);
     const fetchedGroups = await this.groupUseCase.getAllGroups(categoryId);
     this.groups = fetchedGroups;
-    console.log('Fetched groups in Controller:', fetchedGroups.length, 'details:', fetchedGroups);
+    console.log('[GroupController] getAllGroups ← count', fetchedGroups.length);
     this.notifyListeners();
     return fetchedGroups;
   }
