@@ -1,5 +1,5 @@
-import { ILocalPreferences } from './i_local_preferences';
 import { IAuthenticationSource } from '../auth/data/datasources/i_authentication_source';
+import { ILocalPreferences } from './i_local_preferences';
 
 /**
  * RefreshClient - Cliente HTTP que automáticamente refresca el token cuando recibe 401.

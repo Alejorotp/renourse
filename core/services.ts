@@ -1,7 +1,7 @@
+import { ILocalPreferences } from './i_local_preferences';
 import { LocalPreferencesSecured } from './local_preferences_secured';
 import { LocalPreferencesShared } from './local_preferences_shared';
 import { RefreshClient } from './refresh_client';
-import { ILocalPreferences } from './i_local_preferences';
 
 /**
  * Global core services instances

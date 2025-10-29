@@ -13,4 +13,5 @@ export { ILocalPreferences } from './i_local_preferences';
 export { LocalPreferencesSecured } from './local_preferences_secured';
 export { LocalPreferencesShared } from './local_preferences_shared';
 export { RefreshClient } from './refresh_client';
-export { getSecuredPrefs, getSharedPrefs, getRefreshClient, resetCoreServices } from './services';
+export { getRefreshClient, getSecuredPrefs, getSharedPrefs, resetCoreServices } from './services';
+

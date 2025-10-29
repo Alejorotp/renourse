@@ -1,7 +1,7 @@
+import { getRefreshClient } from '@/core';
 import * as SecureStore from 'expo-secure-store';
 import type { Course, CourseInfo } from '../../../domain/models/course_info';
 import type { ICourseSource } from '../i_course_source';
-import { getRefreshClient } from '@/core';
 
 const DB_BASE = 'https://roble-api.openlab.uninorte.edu.co/database';
 const DB_NAME = 'flourse_460df99409';

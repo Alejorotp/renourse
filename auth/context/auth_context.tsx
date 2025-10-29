@@ -1,9 +1,9 @@
+import { getRefreshClient } from '@/core';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useAuthController } from '../controller/auth_controller';
 import { AuthenticationSourceService } from '../data/datasources/remote/authentication_source_service';
 import { AuthRepository } from '../data/repositories/auth_repository';
 import { AuthenticationUseCase } from '../domain/use_case/authentication_usecase';
-import { getRefreshClient } from '@/core';
 
 const authSource = new AuthenticationSourceService();
 const authRepository = new AuthRepository(authSource);
