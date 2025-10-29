@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useAuthController } from '../controller/auth_controller';
 import { AuthenticationSourceService } from '../data/datasources/remote/authentication_source_service';
 import { AuthRepository } from '../data/repositories/auth_repository';
 import { AuthenticationUseCase } from '../domain/use_case/authentication_usecase';
+import { getRefreshClient } from '@/core';
 
 const authSource = new AuthenticationSourceService();
 const authRepository = new AuthRepository(authSource);
@@ -18,6 +19,11 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const controller = useAuthController(authUseCase);
   const value = useMemo(() => ({ useCase: authUseCase, controller }), [controller]);
+
+  // Initialize RefreshClient with authSource on mount
+  useEffect(() => {
+    getRefreshClient(authSource);
+  }, []);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

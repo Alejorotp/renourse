@@ -6,4 +6,5 @@ export interface ICourseRepository {
   createCourse(course: Course): Promise<CourseInfo>;
   updateCourse(id: string, patch: Partial<Course>): Promise<CourseInfo>;
   deleteCourse(id: string): Promise<void>;
+  joinCourse(payload: { courseCode: string; userId: string }): Promise<boolean>;
 }

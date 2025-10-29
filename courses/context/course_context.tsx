@@ -7,13 +7,16 @@ import { CourseUseCase } from '../domain/use_case/course_usecase';
 
 type CourseContextValue = {
   courses: CourseInfo[];
+  userCourses: CourseInfo[];
   loading: boolean;
   error: string | null;
   loadCourses: (params?: { userId?: string }) => Promise<void>;
+  loadUserCourses: (userId: string) => Promise<void>;
   getCourseById: (id: string) => Promise<CourseInfo | null>;
   createCourse: (course: Course) => Promise<CourseInfo>;
   updateCourse: (id: string, patch: Partial<Course>) => Promise<CourseInfo>;
   deleteCourse: (id: string) => Promise<void>;
+  joinCourse: (payload: { courseCode: string; userId: string }) => Promise<boolean>;
 };
 
 const CourseContext = createContext<CourseContextValue | undefined>(undefined);
@@ -26,6 +29,7 @@ export const CourseProvider: React.FC<React.PropsWithChildren> = ({ children }) 
   const controller = useMemo(() => new CourseController(useCase), [useCase]);
 
   const [courses, setCourses] = useState<CourseInfo[]>([]);
+  const [userCourses, setUserCourses] = useState<CourseInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +42,20 @@ export const CourseProvider: React.FC<React.PropsWithChildren> = ({ children }) 
     setError(null);
     try {
       await controller.loadCourses(params);
+      syncState();
+    } catch (e: any) {
+      setError(e?.message ?? String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [controller]);
+
+  const loadUserCourses = useCallback(async (userId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await controller.loadUserCourses(userId);
+      setUserCourses([...controller.userCourses]);
       syncState();
     } catch (e: any) {
       setError(e?.message ?? String(e));
@@ -65,10 +83,15 @@ export const CourseProvider: React.FC<React.PropsWithChildren> = ({ children }) 
     syncState();
   }, [controller]);
 
+  const joinCourse = useCallback(async (payload: { courseCode: string; userId: string }) => {
+    const ok = await controller.joinCourse(payload.courseCode, payload.userId);
+    return ok;
+  }, [controller]);
+
   const value = useMemo<CourseContextValue>(() => ({
-    courses, loading, error,
-    loadCourses, getCourseById, createCourse, updateCourse, deleteCourse,
-  }), [courses, loading, error, loadCourses, getCourseById, createCourse, updateCourse, deleteCourse]);
+    courses, userCourses, loading, error,
+    loadCourses, loadUserCourses, getCourseById, createCourse, updateCourse, deleteCourse, joinCourse,
+  }), [courses, userCourses, loading, error, loadCourses, loadUserCourses, getCourseById, createCourse, updateCourse, deleteCourse, joinCourse]);
 
   return <CourseContext.Provider value={value}>{children}</CourseContext.Provider>;
 };

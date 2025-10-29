@@ -24,4 +24,8 @@ export class CourseRepository implements ICourseRepository {
   deleteCourse(id: string): Promise<void> {
     return this.source.deleteCourse(id);
   }
+
+  joinCourse(payload: { courseCode: string; userId: string }): Promise<boolean> {
+    return this.source.joinCourse(payload);
+  }
 }

@@ -3,6 +3,7 @@ import { CourseUseCase } from '../domain/use_case/course_usecase';
 
 export class CourseController {
   private _courses: CourseInfo[] = [];
+  private _userCourses: CourseInfo[] = [];
   private _loading = false;
   private _error: string | null = null;
 
@@ -10,6 +11,9 @@ export class CourseController {
 
   get courses(): CourseInfo[] {
     return this._courses;
+  }
+  get userCourses(): CourseInfo[] {
+    return this._userCourses;
   }
   get loading(): boolean {
     return this._loading;
@@ -28,6 +32,12 @@ export class CourseController {
     } finally {
       this._loading = false;
     }
+  }
+
+  async loadUserCourses(userId: string) {
+    // Reuse getAllCourses with userId filter; backend should return per-user course info
+    await this.loadCourses({ userId });
+    this._userCourses = [...this._courses];
   }
 
   async getCourseById(id: string): Promise<CourseInfo | null> {
@@ -49,5 +59,10 @@ export class CourseController {
   async deleteCourse(id: string) {
     await this.useCase.deleteCourse(id);
     this._courses = this._courses.filter(ci => ci.course.id !== id);
+  }
+
+  async joinCourse(courseCode: string, userId: string) {
+    const ok = await this.useCase.joinCourse({ courseCode, userId });
+    return ok;
   }
 }

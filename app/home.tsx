@@ -1,11 +1,14 @@
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { useAuth } from '@/auth/context/auth_context';
+import { useAuth, useAuthSession } from '@/auth/context/auth_context';
 import { useAuthController } from '@/auth/controller/auth_controller';
+import { useCourses } from '@/courses/context/course_context';
 
 // Importa los componentes traducidos
+import CreateCourseDialog from '@/components/courses/create_course_dialog';
+import JoinCourseDialog from '@/components/courses/join_course_dialog';
 import CourseCard from '../components/home/course_card';
 import CreateCourseCard from '../components/home/create_course_card';
 import EvaluationListCard from '../components/home/evaluation_list_card';
@@ -21,13 +24,22 @@ const blue = 'rgba(43, 213, 243, 1)';
 export default function HomeScreen() {
   const authUseCase = useAuth();
   const { logout, user } = useAuthController(authUseCase);
+  const session = useAuthSession();
+  const { userCourses, loadUserCourses } = useCourses();
   const router = useRouter();
+  const [showCreate, setShowCreate] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
 
-  // TODO: Reemplazar con hooks/controladores reales
-  const courses: Array<{ id?: string | number; name?: string; userRole?: string }> = [];
+  useEffect(() => {
+    if (session.user?.id != null) {
+      loadUserCourses(String(session.user.id));
+    }
+  }, [session.user?.id, loadUserCourses]);
+
+  const profCourses = useMemo(() => userCourses.filter(c => c.userRole === 'Profesor'), [userCourses]);
+  const studentCourses = useMemo(() => userCourses.filter(c => c.userRole !== 'Profesor'), [userCourses]);
+
   const evaluations: Array<{ id?: string | number; title?: string }> = [];
-  const profCourses = courses.filter(c => c.userRole === 'profesor');
-  const studentCourses = courses.filter(c => c.userRole === 'estudiante');
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F4FA' }}>
@@ -67,11 +79,11 @@ export default function HomeScreen() {
         </View>
         {/* Carrusel de profesor */}
         <ScrollView horizontal style={{ height: 180 }}>
-          {profCourses.map((course, idx) => (
-            <CourseCard key={course.id} courseInfo={course} />
+          {profCourses.map((ci, idx) => (
+            <CourseCard key={ci.course.id} courseInfo={{ id: ci.course.id, name: ci.course.name, userRole: ci.userRole }} onPress={() => router.push({ pathname: '/courses/[id]', params: { id: ci.course.id } })} />
           ))}
           {profCourses.length <= 2 && (
-            <CreateCourseCard onTap={() => {/* TODO: show create dialog */}} />
+            <CreateCourseCard onTap={() => setShowCreate(true)} />
           )}
         </ScrollView>
 
@@ -81,10 +93,10 @@ export default function HomeScreen() {
         </View>
         {/* Carrusel de estudiante */}
         <ScrollView horizontal style={{ height: 180 }}>
-          {studentCourses.map((course, idx) => (
-            <CourseCard key={course.id} courseInfo={course} />
+          {studentCourses.map((ci, idx) => (
+            <CourseCard key={ci.course.id} courseInfo={{ id: ci.course.id, name: ci.course.name, userRole: ci.userRole }} onPress={() => router.push({ pathname: '/courses/[id]', params: { id: ci.course.id } })} />
           ))}
-          <JoinCourseCard onTap={() => {/* TODO: show join dialog */}} />
+          <JoinCourseCard onTap={() => setShowJoin(true)} />
         </ScrollView>
 
         {/* Evaluaciones pendientes */}
@@ -106,6 +118,9 @@ export default function HomeScreen() {
           )}
         </ScrollView>
       </ScrollView>
+
+      <CreateCourseDialog visible={showCreate} onClose={() => setShowCreate(false)} />
+      <JoinCourseDialog visible={showJoin} onClose={() => setShowJoin(false)} />
     </View>
   );
 }

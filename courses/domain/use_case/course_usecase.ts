@@ -23,4 +23,8 @@ export class CourseUseCase {
   deleteCourse(id: string): Promise<void> {
     return this.repo.deleteCourse(id);
   }
+
+  joinCourse(payload: { courseCode: string; userId: string }): Promise<boolean> {
+    return this.repo.joinCourse(payload);
+  }
 }
