@@ -67,7 +67,9 @@ export class CourseSourceService implements ICourseSource {
       const userId = params.userId;
       // 1) CourseMember for user
       const cmUrl = `${DB_BASE}/${DB_NAME}/read?tableName=CourseMember&userID=${encodeURIComponent(userId)}`;
+      console.log('[CourseSourceService] fetchCourses →', cmUrl);
       const cmRes = await this.get(cmUrl);
+      console.log('[CourseSourceService] fetchCourses ← status', cmRes.status);
       if (!cmRes.ok) return [];
       const memberships: any[] = await cmRes.json();
       if (!Array.isArray(memberships) || memberships.length === 0) return [];
@@ -117,7 +119,9 @@ export class CourseSourceService implements ICourseSource {
 
     // Otherwise fetch all courses
     const url = `${DB_BASE}/${DB_NAME}/read?tableName=Course`;
+    console.log('[CourseSourceService] fetchCourses (all) →', url);
     const res = await this.get(url);
+    console.log('[CourseSourceService] fetchCourses (all) ← status', res.status);
     if (!res.ok) return [];
     const jsonList: any[] = await res.json();
     const out: CourseInfo[] = [];
@@ -140,13 +144,28 @@ export class CourseSourceService implements ICourseSource {
   async fetchCourseById(id: string): Promise<CourseInfo | null> {
     // Treat id as courseCode (as in Flutter)
     const url = `${DB_BASE}/${DB_NAME}/read?tableName=Course&courseCode=${encodeURIComponent(id)}`;
+    console.log('[CourseSourceService] fetchCourseById →', url);
     const res = await this.get(url);
+    console.log('[CourseSourceService] fetchCourseById ← status', res.status);
     if (!res.ok) return null;
     const arr = await res.json();
     if (!Array.isArray(arr) || arr.length === 0) return null;
     const mapped = mapCourseFromDB(arr[0]);
     const profName = await this.getUserNameById(String(mapped.professorId ?? ''));
-    return { course: mapped, professorName: profName };
+    
+    // Fetch members for this course
+    const membersUrl = `${DB_BASE}/${DB_NAME}/read?tableName=CourseMember&courseID=${encodeURIComponent(mapped.courseCode)}`;
+    console.log('[CourseSourceService] fetchCourseById members →', membersUrl);
+    const mRes = await this.get(membersUrl);
+    console.log('[CourseSourceService] fetchCourseById members ← status', mRes.status);
+    let memberNames: string[] = [];
+    if (mRes.ok) {
+      const memberArr = await mRes.json();
+      const memberIds = Array.isArray(memberArr) ? memberArr.map((m: any) => String(m.userID)) : [];
+      memberNames = await Promise.all(memberIds.map(id => this.getUserNameById(id)));
+    }
+    
+    return { course: mapped, professorName: profName, memberNames };
   }
 
   async createCourse(course: Course): Promise<CourseInfo> {
@@ -173,7 +192,9 @@ export class CourseSourceService implements ICourseSource {
       categoryIDs: [],
     };
     const insUrl = `${DB_BASE}/${DB_NAME}/insert`;
+    console.log('[CourseSourceService] createCourse →', insUrl, { tableName: 'Course', records: [record] });
     const insRes = await this.post(insUrl, { tableName: 'Course', records: [record] });
+    console.log('[CourseSourceService] createCourse ← status', insRes.status);
     if (insRes.status !== 201) throw new Error(`createCourse failed: ${insRes.status}`);
 
     // Add professor as member (role true if backend uses it)
@@ -203,7 +224,10 @@ export class CourseSourceService implements ICourseSource {
 
   async joinCourse(payload: { courseCode: string; userId: string }): Promise<boolean> {
     // Check course exists
-    const courseRes = await this.get(`${DB_BASE}/${DB_NAME}/read?tableName=Course&courseCode=${encodeURIComponent(payload.courseCode)}`);
+    const courseUrl = `${DB_BASE}/${DB_NAME}/read?tableName=Course&courseCode=${encodeURIComponent(payload.courseCode)}`;
+    console.log('[CourseSourceService] joinCourse →', courseUrl);
+    const courseRes = await this.get(courseUrl);
+    console.log('[CourseSourceService] joinCourse ← status', courseRes.status);
     if (!courseRes.ok) return false;
     const courseArr = await courseRes.json();
     if (!Array.isArray(courseArr) || courseArr.length === 0) return false;
@@ -216,10 +240,14 @@ export class CourseSourceService implements ICourseSource {
     }
 
     // Insert membership
-    const res = await this.post(`${DB_BASE}/${DB_NAME}/insert`, {
+    const insertUrl = `${DB_BASE}/${DB_NAME}/insert`;
+    const insertBody = {
       tableName: 'CourseMember',
       records: [{ courseID: payload.courseCode, userID: payload.userId, role: false }],
-    });
+    };
+    console.log('[CourseSourceService] joinCourse insert →', insertUrl, insertBody);
+    const res = await this.post(insertUrl, insertBody);
+    console.log('[CourseSourceService] joinCourse insert ← status', res.status);
     return res.status === 201;
   }
 }

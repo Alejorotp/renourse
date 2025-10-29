@@ -31,4 +31,8 @@ export class GroupUseCase {
   async getUserGroups(userId: string): Promise<Group[]> {
     return this.repository.getUserGroups(userId);
   }
+
+  async autoGenerateRandomGroups(params: { categoryId: string; maxMembers: number; courseId: string }): Promise<Group[]> {
+    return this.repository.autoGenerateRandomGroups(params);
+  }
 }

@@ -1,7 +1,7 @@
+import { getRefreshClient } from '@/core';
 import * as SecureStore from 'expo-secure-store';
 import { Group, groupFromJson } from '../../../domain/models/group';
 import { IGroupSource } from '../i_group_source';
-import { getRefreshClient } from '@/core';
 
 const DATABASE_NAME = 'flourse_460df99409';
 const API_BASE_URL = 'https://roble-api.openlab.uninorte.edu.co/database';
@@ -65,31 +65,116 @@ export class GroupSourceService implements IGroupSource {
     });
   }
 
+  // Helpers
+  private async readJson(url: string): Promise<any[]> {
+    const res = await this.get(url);
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.warn('[GroupSourceService] GET failed', res.status, url, text?.slice(0, 400));
+      return [];
+    }
+    try {
+      return await res.json();
+    } catch {
+      return [];
+    }
+  }
+
+  private async getCourseMembers(courseId: string): Promise<string[]> {
+    const url = `${API_BASE_URL}/${DATABASE_NAME}/read?tableName=CourseMember&courseID=${encodeURIComponent(courseId)}`;
+    console.log('[GroupSourceService] getCourseMembers →', url);
+    const list = await this.readJson(url);
+    const ids = Array.isArray(list) ? list.map((m: any) => String(m.userID)) : [];
+    console.log('[GroupSourceService] getCourseMembers ← count', ids.length);
+    return ids;
+  }
+
+  private async getCourseProfessorId(courseId: string): Promise<string | null> {
+    const url = `${API_BASE_URL}/${DATABASE_NAME}/read?tableName=Course&courseCode=${encodeURIComponent(courseId)}`;
+    console.log('[GroupSourceService] getCourseProfessorId →', url);
+    const list = await this.readJson(url);
+    const first = Array.isArray(list) && list.length ? list[0] : null;
+    const prof = first?.professorID ?? first?.professorId;
+    console.log('[GroupSourceService] getCourseProfessorId ←', prof ? 'found' : 'none');
+    return prof ? String(prof) : null;
+  }
+
+  /**
+   * Create all needed groups for a category with Aleatorio method and auto-assign members.
+   */
+  async autoGenerateRandomGroups(params: { categoryId: string; maxMembers: number; courseId: string }): Promise<Group[]> {
+    const { categoryId, maxMembers, courseId } = params;
+    console.log('[GroupSourceService] autoGenerateRandomGroups →', params);
+    // 1) Fetch course members and filter out professor
+    const [members, professorId] = await Promise.all([
+      this.getCourseMembers(courseId),
+      this.getCourseProfessorId(courseId),
+    ]);
+    const students = members.filter((id) => !professorId || String(id) !== String(professorId));
+    console.log('[GroupSourceService] autoGenerateRandomGroups students count', students.length);
+
+    if (students.length === 0 || maxMembers <= 0) return [];
+
+    // 2) Determine number of groups
+    const groupsNeeded = Math.ceil(students.length / maxMembers);
+    console.log('[GroupSourceService] groupsNeeded', groupsNeeded);
+
+    // 3) Create groups
+    const createdGroups: Group[] = [];
+    for (let i = 0; i < groupsNeeded; i++) {
+      const group = await this.createGroup(maxMembers, categoryId, i + 1);
+      createdGroups.push(group);
+    }
+
+    // 4) Assign students round-robin up to capacity
+    let gIdx = 0;
+    const counters: Record<string, number> = Object.fromEntries(createdGroups.map(g => [g.id, 0]));
+    for (const studentId of students) {
+      // Find next group with available slot
+      let tries = 0;
+      while (tries < createdGroups.length) {
+        const g = createdGroups[gIdx];
+        if ((counters[g.id] ?? 0) < maxMembers) {
+          // assign
+          await this.joinGroup(g.id, studentId);
+          counters[g.id] = (counters[g.id] ?? 0) + 1;
+          gIdx = (gIdx + 1) % createdGroups.length;
+          break;
+        }
+        gIdx = (gIdx + 1) % createdGroups.length;
+        tries++;
+      }
+    }
+
+    console.log('[GroupSourceService] autoGenerateRandomGroups ← created', createdGroups.length);
+    return createdGroups;
+  }
+
   async getAllGroups(categoryId: string): Promise<Group[]> {
-    console.log('Fetching all groups from API for category:', categoryId);
+    console.log('[GroupSourceService] getAllGroups → category', categoryId);
     try {
       const response = await this.get(
-        `${API_BASE_URL}/${DATABASE_NAME}/read?tableName=Group&categoryID=${categoryId}`
+        `${API_BASE_URL}/${DATABASE_NAME}/read?tableName=Group&categoryID=${encodeURIComponent(categoryId)}`
       );
 
       if (response.status === 200) {
         const jsonList = await response.json();
-        console.log('Groups fetch response:', jsonList);
+        console.log('[GroupSourceService] getAllGroups ← groups', Array.isArray(jsonList) ? jsonList.length : 'n/a');
 
         const fetchedGroups: Group[] = [];
         for (const data of jsonList) {
           // Fetch members for this group
           const memberIDsResponse = await this.get(
-            `${API_BASE_URL}/${DATABASE_NAME}/read?tableName=GroupMember&groupID=${data._id}`
+            `${API_BASE_URL}/${DATABASE_NAME}/read?tableName=GroupMember&groupID=${encodeURIComponent(data._id)}`
           );
 
           let memberIDs: string[] = [];
           if (memberIDsResponse.status === 200) {
             const memberList = await memberIDsResponse.json();
             memberIDs = memberList.map((member: any) => member.userID as string);
-            console.log(`Fetched memberIDs for group ${data._id}:`, memberIDs);
+            console.log('[GroupSourceService] members for group', data._id, memberIDs.length);
           } else {
-            console.error(`Failed to fetch memberIDs for group ${data._id}:`, memberIDsResponse.status);
+            console.error('[GroupSourceService] members fetch failed for', data._id, memberIDsResponse.status);
           }
 
           const group: Group = {
@@ -99,16 +184,16 @@ export class GroupSourceService implements IGroupSource {
             groupNumber: data.groupNumber || 0,
           };
           
-          console.log('Fetched group:', group);
+          console.log('[GroupSourceService] group mapped', group.id, group.memberIDs.length);
           fetchedGroups.push(group);
         }
         return fetchedGroups;
       } else {
-        console.error('Failed to fetch groups:', response.status);
+        console.error('[GroupSourceService] getAllGroups failed:', response.status);
         return [];
       }
     } catch (e) {
-      console.error('Error fetching groups:', e);
+      console.error('[GroupSourceService] getAllGroups error:', e);
       return [];
     }
   }

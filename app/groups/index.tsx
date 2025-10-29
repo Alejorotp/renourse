@@ -1,24 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { SafeTop } from '@/components/ui/safe-top';
-import { useGroups } from '@/groups/context/group_context';
 import { useAuthSession } from '@/auth/context/auth_context';
 import { Category } from '@/categories/domain/models/category';
+import { SafeTop } from '@/components/ui/safe-top';
+import { useGroups } from '@/groups/context/group_context';
 import { Group } from '@/groups/domain/models/group';
 import { Ionicons } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 export default function GroupsPage() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const { groups, getAllGroups, joinGroup, createGroup } = useGroups();
+  const { groups, getAllGroups, joinGroup, createGroup, ensureRandomGroups } = useGroups();
   const { user } = useAuthSession();
 
   // Parse category from params
@@ -45,6 +45,31 @@ export default function GroupsPage() {
       setLoading(false);
     }
   };
+
+  // Auto-generate for Aleatorio categories when professor enters and no groups exist
+  useEffect(() => {
+    if (!category?.id) return;
+    const method = String(category.groupingMethod || '').toLowerCase();
+    if (!canEdit || !method.startsWith('aleatorio')) return;
+    const maybeGenerate = async () => {
+      try {
+        const filtered = groups.filter(g => g.categoryID === category.id);
+        if (filtered.length === 0 && category.courseId) {
+          setLoading(true);
+          console.log('[GroupsPage] Aleatorio: generating groups for category', category.id);
+          await ensureRandomGroups({ categoryId: category.id!, maxMembers: category.maxMembers, courseId: String(category.courseId) });
+          await getAllGroups(category.id!);
+        }
+      } catch (e) {
+        console.error('[GroupsPage] ensureRandomGroups error', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    // Trigger after initial load
+    maybeGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canEdit, category?.id, category?.courseId, category?.maxMembers, category?.groupingMethod, groups.length]);
 
   const handleCreateGroup = async () => {
     if (!category?.id) return;
@@ -92,6 +117,9 @@ export default function GroupsPage() {
   const renderGroupCard = ({ item, index }: { item: Group; index: number }) => {
     const isFull = item.memberIDs.length >= category.maxMembers;
     const isUserInThisGroup = item.memberIDs.includes(String(user?.id || ''));
+    const method = String(category.groupingMethod || '').toLowerCase();
+    const isAuto = method.startsWith('auto');
+    const isRandom = method.startsWith('aleatorio');
 
     return (
       <TouchableOpacity
@@ -107,7 +135,7 @@ export default function GroupsPage() {
             </Text>
           </View>
           <View style={styles.cardRight}>
-            {!canEdit && !userInGroup && !isFull && (
+            {!canEdit && !userInGroup && !isFull && isAuto && (
               <TouchableOpacity
                 style={styles.joinButton}
                 onPress={(e) => {
@@ -159,6 +187,11 @@ export default function GroupsPage() {
               <Text style={styles.createButtonText}>Crear Grupo</Text>
             )}
           </TouchableOpacity>
+        )}
+        {canEdit && String(category.groupingMethod || '').toLowerCase().startsWith('aleatorio') && (
+          <Text style={{ color: '#666', marginBottom: 8 }}>
+            Esta categoría es aleatoria: los grupos se crean y asignan automáticamente según los integrantes del curso.
+          </Text>
         )}
 
         {loading ? (

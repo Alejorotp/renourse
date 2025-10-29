@@ -32,4 +32,8 @@ export class GroupRepository implements IGroupRepository {
   async getUserGroups(userId: string): Promise<Group[]> {
     return this.groupSource.getUserGroups(userId);
   }
+
+  async autoGenerateRandomGroups(params: { categoryId: string; maxMembers: number; courseId: string }): Promise<Group[]> {
+    return this.groupSource.autoGenerateRandomGroups(params);
+  }
 }

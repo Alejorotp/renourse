@@ -1,5 +1,5 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -18,6 +18,7 @@ export default function CurrentCoursePage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getCourseById } = useCourses();
   const { user } = useAuthSession();
+  const router = useRouter();
   const [selected, setSelected] = useState(0);
   const [courseInfo, setCourseInfo] = useState<Awaited<ReturnType<typeof getCourseById>> | null>(null);
   const { categories, loadCategories, createCategory, deleteCategory } = useCategories();
@@ -59,6 +60,7 @@ export default function CurrentCoursePage() {
             )}
             <View style={styles.divider} />
             <View style={styles.chipRow}>
+              <Ionicons name="people" size={26} color={darkBlue} style={{ marginRight: 6 }} />
               <Text style={styles.chipText}>Total de estudiantes: {(courseInfo?.memberNames?.length || 1) - 1}</Text>
             </View>
             <View style={{ height: 8 }} />
@@ -90,11 +92,27 @@ export default function CurrentCoursePage() {
               return (
                 <View style={{ gap: 10 }}>
                   {list.map((cat) => (
-                    <CategoryRow key={cat.id} cat={cat} canDelete={isProfessor} onDelete={async () => {
-                      if (cat.id) {
-                        try { await deleteCategory(cat.id); } catch {}
-                      }
-                    }} />
+                    <CategoryRow 
+                      key={cat.id} 
+                      cat={cat} 
+                      canDelete={isProfessor} 
+                      isProfessor={isProfessor}
+                      onDelete={async () => {
+                        if (cat.id) {
+                          try { await deleteCategory(cat.id); } catch {}
+                        }
+                      }}
+                      onPress={() => {
+                        router.push({
+                          pathname: '/groups/index',
+                          params: {
+                            category: JSON.stringify(cat),
+                            canEdit: String(isProfessor),
+                            groupNumber: String(0),
+                          },
+                        });
+                      }}
+                    />
                   ))}
                 </View>
               );
@@ -123,19 +141,38 @@ export default function CurrentCoursePage() {
   );
 }
 
-function CategoryRow({ cat, canDelete, onDelete }: { cat: Category; canDelete: boolean; onDelete: () => void }) {
+function CategoryRow({ 
+  cat, 
+  canDelete, 
+  isProfessor,
+  onDelete, 
+  onPress 
+}: { 
+  cat: Category; 
+  canDelete: boolean; 
+  isProfessor: boolean;
+  onDelete: () => void;
+  onPress: () => void;
+}) {
   return (
-    <View style={styles.catRow}>
-      <View>
+    <TouchableOpacity style={styles.catRow} onPress={onPress} activeOpacity={0.7}>
+      <View style={{ flex: 1 }}>
         <Text style={styles.catName}>{cat.name}</Text>
         <Text style={styles.catMeta}>Método: {cat.groupingMethod} • Máx integrantes: {cat.maxMembers}</Text>
       </View>
       {canDelete && (
-        <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
+        <TouchableOpacity 
+          onPress={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }} 
+          style={styles.deleteBtn}
+        >
           <Text style={{ color: '#fff', fontWeight: '600' }}>Eliminar</Text>
         </TouchableOpacity>
       )}
-    </View>
+      <Ionicons name="chevron-forward" size={24} color="#999" style={{ marginLeft: 8 }} />
+    </TouchableOpacity>
   );
 }
 
@@ -151,7 +188,15 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: 'bold' },
   addBtn: { backgroundColor: 'rgba(224,224,224,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   addText: { fontWeight: 'bold', color: '#222' },
-  chipRow: { alignSelf: 'flex-start', backgroundColor: 'rgba(43,213,243,0.15)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 4 },
+  chipRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    alignSelf: 'flex-start', 
+    backgroundColor: 'rgba(43,213,243,0.15)', 
+    borderRadius: 10, 
+    paddingHorizontal: 12, 
+    paddingVertical: 4 
+  },
   chipText: { color: darkBlue, fontWeight: '600', fontSize: 16 },
   bottomBar: { backgroundColor: '#fff', shadowColor: 'rgba(0,0,0,0.15)', shadowOpacity: 0.4, shadowRadius: 6, elevation: 6 },
   bottomInner: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 8 },

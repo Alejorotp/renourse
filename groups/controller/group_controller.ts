@@ -58,6 +58,18 @@ export class GroupController {
     return fetchedGroups;
   }
 
+  async ensureRandomGroups(params: { categoryId: string; maxMembers: number; courseId: string }): Promise<Group[]> {
+    // If there are no groups yet for this category, auto-generate for Aleatorio
+    const current = await this.groupUseCase.getAllGroups(params.categoryId);
+    if (current.length > 0) return current;
+    const created = await this.groupUseCase.autoGenerateRandomGroups(params);
+    // Refresh state
+    const refreshed = await this.groupUseCase.getAllGroups(params.categoryId);
+    this.groups = refreshed;
+    this.notifyListeners();
+    return created;
+  }
+
   async joinGroup(groupId: string, userId: string, categoryId: string): Promise<boolean> {
     const result = await this.groupUseCase.joinGroup(groupId, userId);
     if (result) {

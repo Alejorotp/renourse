@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { Category } from '@/categories/domain/models/category';
 import { SafeTop } from '@/components/ui/safe-top';
 import { useGroups } from '@/groups/context/group_context';
-import { Category } from '@/categories/domain/models/category';
 import { Group } from '@/groups/domain/models/group';
 import { getUserNameById } from '@/shared/utils/user_utils';
 import { Ionicons } from '@expo/vector-icons';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+    Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 export default function GroupDetailPage() {
   const params = useLocalSearchParams();

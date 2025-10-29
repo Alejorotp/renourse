@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Group } from '../domain/models/group';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { GroupController } from '../controller/group_controller';
-import { GroupUseCase } from '../domain/use_case/group_usecase';
-import { GroupRepository } from '../data/repositories/group_repository';
 import { GroupSourceService } from '../data/datasources/remote/group_source_service';
+import { GroupRepository } from '../data/repositories/group_repository';
+import { Group } from '../domain/models/group';
+import { GroupUseCase } from '../domain/use_case/group_usecase';
 
 interface GroupContextType {
   groups: Group[];
@@ -15,6 +15,7 @@ interface GroupContextType {
   deleteGroup: (id: string, categoryId: string) => Promise<void>;
   getGroupById: (id: string) => Promise<Group[]>;
   loadUserGroups: (userId: string) => Promise<Group[]>;
+  ensureRandomGroups: (params: { categoryId: string; maxMembers: number; courseId: string }) => Promise<Group[]>;
 }
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined);
@@ -71,6 +72,10 @@ export const GroupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return fetchedUserGroups;
   };
 
+  const ensureRandomGroups = async (params: { categoryId: string; maxMembers: number; courseId: string }): Promise<Group[]> => {
+    return await groupController.ensureRandomGroups(params);
+  };
+
   return (
     <GroupContext.Provider
       value={{
@@ -83,6 +88,7 @@ export const GroupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         deleteGroup,
         getGroupById,
         loadUserGroups,
+        ensureRandomGroups,
       }}
     >
       {children}

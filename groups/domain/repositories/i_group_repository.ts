@@ -8,4 +8,5 @@ export interface IGroupRepository {
   removeMemberFromGroup(groupId: string, userId: string): Promise<boolean>;
   deleteGroup(id: string): Promise<void>;
   getUserGroups(userId: string): Promise<Group[]>;
+  autoGenerateRandomGroups(params: { categoryId: string; maxMembers: number; courseId: string }): Promise<Group[]>;
 }

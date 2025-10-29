@@ -82,7 +82,17 @@ export default function HomeScreen() {
         {/* Carrusel de profesor */}
         <ScrollView horizontal style={{ height: 180 }}>
           {profCourses.map((ci, idx) => (
-            <CourseCard key={ci.course.id} courseInfo={{ id: ci.course.id, name: ci.course.name, userRole: ci.userRole }} onPress={() => router.push({ pathname: '/courses/[id]', params: { id: ci.course.id } })} />
+            <CourseCard 
+              key={ci.course.id} 
+              courseInfo={{ 
+                id: ci.course.id, 
+                name: ci.course.name, 
+                userRole: ci.userRole,
+                memberNames: ci.memberNames,
+                professorName: ci.professorName
+              }} 
+              onPress={() => router.push({ pathname: '/courses/[id]', params: { id: ci.course.id } })} 
+            />
           ))}
           {profCourses.length <= 2 && (
             <CreateCourseCard onTap={() => setShowCreate(true)} />
@@ -96,7 +106,17 @@ export default function HomeScreen() {
         {/* Carrusel de estudiante */}
         <ScrollView horizontal style={{ height: 180 }}>
           {studentCourses.map((ci, idx) => (
-            <CourseCard key={ci.course.id} courseInfo={{ id: ci.course.id, name: ci.course.name, userRole: ci.userRole }} onPress={() => router.push({ pathname: '/courses/[id]', params: { id: ci.course.id } })} />
+            <CourseCard 
+              key={ci.course.id} 
+              courseInfo={{ 
+                id: ci.course.id, 
+                name: ci.course.name, 
+                userRole: ci.userRole,
+                memberNames: ci.memberNames,
+                professorName: ci.professorName
+              }} 
+              onPress={() => router.push({ pathname: '/courses/[id]', params: { id: ci.course.id } })} 
+            />
           ))}
           <JoinCourseCard onTap={() => setShowJoin(true)} />
         </ScrollView>

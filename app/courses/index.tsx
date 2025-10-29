@@ -38,7 +38,7 @@ export default function CoursesPage() {
     <View style={{ flex: 1, backgroundColor: '#F8F4FA' }}>
       <SafeTop />
       <View style={styles.appBar}>
-        <Text style={styles.appBarTitle}>Flourse</Text>
+        <Text style={styles.appBarTitle}>Renourse</Text>
       </View>
       <View style={styles.container}>
         <View style={styles.rowBetween}>

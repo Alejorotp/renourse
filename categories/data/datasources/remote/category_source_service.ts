@@ -1,3 +1,5 @@
+import { getRefreshClient } from '@/core';
+import * as SecureStore from 'expo-secure-store';
 import type { Category } from '../../../domain/models/category';
 import { mapCategoryFromDb } from '../../../domain/models/category';
 import type { ICategorySource } from '../i_category_source';
@@ -9,15 +11,54 @@ export class CategorySourceService implements ICategorySource {
 	private baseHeaders = { 'Content-Type': 'application/json' };
 	constructor(private readonly getAuthToken: () => string | undefined) {}
 
+	private async getToken(): Promise<string | null> {
+		try {
+			return await SecureStore.getItemAsync('token');
+		} catch {
+			return null;
+		}
+	}
+
 	private headers() {
 		const token = this.getAuthToken();
 		return token ? { ...this.baseHeaders, Authorization: `Bearer ${token}` } : { ...this.baseHeaders };
 	}
 
+	private async get(url: string): Promise<Response> {
+		const refreshClient = getRefreshClient();
+		if (refreshClient) {
+			return refreshClient.get(url);
+		}
+		
+		const token = await this.getToken();
+		return fetch(url, {
+			headers: {
+				'Authorization': token ? `Bearer ${token}` : '',
+			},
+		});
+	}
+
+	private async post(url: string, body: any): Promise<Response> {
+		const refreshClient = getRefreshClient();
+		if (refreshClient) {
+			return refreshClient.post(url, body);
+		}
+		
+		const token = await this.getToken();
+		return fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': token ? `Bearer ${token}` : '',
+			},
+			body: JSON.stringify(body),
+		});
+	}
+
 	async getAllCategories(): Promise<Category[]> {
 		const url = `${API_BASE}/${DB_NAME}/read?tableName=Category`;
 		console.log('[CategorySourceService] getAllCategories →', url);
-		const res = await fetch(url, { headers: this.headers() });
+		const res = await this.get(url);
 		console.log('[CategorySourceService] getAllCategories ← status', res.status);
 		if (!res.ok) {
 			const text = await res.text().catch(() => '');
@@ -38,7 +79,7 @@ export class CategorySourceService implements ICategorySource {
 			],
 		};
 		console.log('[CategorySourceService] createCategory →', url, body);
-		const res = await fetch(url, { method: 'POST', headers: this.headers(), body: JSON.stringify(body) });
+		const res = await this.post(url, body);
 		console.log('[CategorySourceService] createCategory ← status', res.status);
 		if (res.status !== 201) {
 			const text = await res.text().catch(() => '');
@@ -66,7 +107,7 @@ export class CategorySourceService implements ICategorySource {
 		const url = `${API_BASE}/${DB_NAME}/delete`;
 		const body = { tableName: 'Category', filter: { _id: id } };
 		console.log('[CategorySourceService] deleteCategory →', url, body);
-		const res = await fetch(url, { method: 'POST', headers: this.headers(), body: JSON.stringify(body) });
+		const res = await this.post(url, body);
 		console.log('[CategorySourceService] deleteCategory ← status', res.status);
 		if (!res.ok) {
 			const text = await res.text().catch(() => '');
@@ -91,7 +132,7 @@ export class CategorySourceService implements ICategorySource {
 
 		const body = { tableName: 'Category', filter: { _id: id }, update };
 		console.log('[CategorySourceService] updateCategory →', url, body);
-		const res = await fetch(url, { method: 'POST', headers: this.headers(), body: JSON.stringify(body) });
+		const res = await this.post(url, body);
 		console.log('[CategorySourceService] updateCategory ← status', res.status);
 		if (!res.ok) {
 			const text = await res.text().catch(() => '');
@@ -106,7 +147,7 @@ export class CategorySourceService implements ICategorySource {
 	async getCategoryById(id: string): Promise<Category | null> {
 		const url = `${API_BASE}/${DB_NAME}/read?tableName=Category&_id=${encodeURIComponent(id)}`;
 		console.log('[CategorySourceService] getCategoryById →', url);
-		const res = await fetch(url, { headers: this.headers() });
+		const res = await this.get(url);
 		console.log('[CategorySourceService] getCategoryById ← status', res.status);
 		if (res.status === 404) return null;
 		if (!res.ok) {
