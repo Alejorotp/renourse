@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 import { AuthProvider } from '@/auth/context/auth_context';
 import { CategoryProvider } from '@/categories/context/category_context';
 import { CourseProvider } from '@/courses/context/course_context';
+import { EvaluationProvider } from '@/evaluations/context/evaluation_context';
 import { GroupProvider } from '@/groups/context/group_context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -21,20 +22,26 @@ export default function RootLayout() {
       <CourseProvider>
         <CategoryProvider>
           <GroupProvider>
-            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-              <Stack>
-                <Stack.Screen name="login" options={{ headerShown: false }} />
-                <Stack.Screen name="home" options={{ headerShown: false }} />
-                <Stack.Screen name="modal" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                {/* Put index before dynamic to avoid /groups/index being captured as id = "index" */}
-                <Stack.Screen name="courses/index" options={{ headerShown: false }} />
-                <Stack.Screen name="courses/[id]" options={{ headerShown: false }} />
-                <Stack.Screen name="groups/index" options={{ headerShown: false }} />
-                <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
-              </Stack>
-              <StatusBar style="auto" />
-            </ThemeProvider>
+            <EvaluationProvider>
+              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                <Stack>
+                  <Stack.Screen name="login" options={{ headerShown: false }} />
+                  <Stack.Screen name="home" options={{ headerShown: false }} />
+                  <Stack.Screen name="modal" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  {/* Put index before dynamic to avoid /groups/index being captured as id = "index" */}
+                  <Stack.Screen name="courses/index" options={{ headerShown: false }} />
+                  <Stack.Screen name="courses/[id]" options={{ headerShown: false }} />
+                  <Stack.Screen name="groups/index" options={{ headerShown: false }} />
+                  <Stack.Screen name="groups/[id]" options={{ headerShown: false }} />
+                  <Stack.Screen name="evaluations/index" options={{ headerShown: false }} />
+                  <Stack.Screen name="evaluations/[id]" options={{ headerShown: false }} />
+                  <Stack.Screen name="evaluations/create" options={{ headerShown: false }} />
+                  <Stack.Screen name="evaluations/evaluate" options={{ headerShown: false }} />
+                </Stack>
+                <StatusBar style="auto" />
+              </ThemeProvider>
+            </EvaluationProvider>
           </GroupProvider>
         </CategoryProvider>
       </CourseProvider>

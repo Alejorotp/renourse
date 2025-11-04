@@ -5,6 +5,7 @@ import { Button, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 're
 import { useAuth, useAuthSession } from '@/auth/context/auth_context';
 import { useAuthController } from '@/auth/controller/auth_controller';
 import { useCourses } from '@/courses/context/course_context';
+import { useEvaluations } from '@/evaluations/context/evaluation_context';
 import { SafeTop } from '../components/ui/safe-top';
 
 // Importa los componentes traducidos
@@ -27,6 +28,7 @@ export default function HomeScreen() {
   const { logout, user } = useAuthController(authUseCase);
   const session = useAuthSession();
   const { userCourses, loadUserCourses } = useCourses();
+  const { userEvals, getUserEvaluations } = useEvaluations();
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
@@ -34,13 +36,12 @@ export default function HomeScreen() {
   useEffect(() => {
     if (session.user?.id != null) {
       loadUserCourses(String(session.user.id));
+      getUserEvaluations(String(session.user.id));
     }
-  }, [session.user?.id, loadUserCourses]);
+  }, [session.user?.id, loadUserCourses, getUserEvaluations]);
 
   const profCourses = useMemo(() => userCourses.filter(c => c.userRole === 'Profesor'), [userCourses]);
   const studentCourses = useMemo(() => userCourses.filter(c => c.userRole !== 'Profesor'), [userCourses]);
-
-  const evaluations: Array<{ id?: string | number; title?: string }> = [];
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8F4FA' }}>
@@ -129,13 +130,23 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
         <ScrollView horizontal style={{ height: 120 }}>
-          {evaluations.length === 0 ? (
+          {userEvals.length === 0 ? (
             <View style={styles.noEval}>
               <Text style={styles.noEvalText}>No tienes evaluaciones pendientes.</Text>
             </View>
           ) : (
-            evaluations.map((evalItem, idx) => (
-              <EvaluationListCard key={evalItem.id} evaluation={evalItem} onTap={() => {/* TODO: go to evaluation */}} />
+            userEvals.map((evaluation) => (
+              <EvaluationListCard 
+                key={evaluation.evaluationID} 
+                evaluation={evaluation} 
+                onTap={() => router.push({ 
+                  pathname: '/evaluations/[id]' as any, 
+                  params: { 
+                    id: evaluation.evaluationID,
+                    evaluation: JSON.stringify(evaluation)
+                  } 
+                })} 
+              />
             ))
           )}
         </ScrollView>
