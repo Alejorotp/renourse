@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState } from 'react';
+import { EvaluationController } from '../controller/evaluation_controller';
 import { EvaluationSourceService } from '../data/datasources/remote/evaluation_source_service';
 import { EvaluationRepository } from '../data/repositories/evaluation_repository';
-import { EvaluationUseCase } from '../domain/use_case/evaluation_usecase';
-import { EvaluationController } from '../controller/evaluation_controller';
 import { Evaluation } from '../domain/models/evaluation';
 import { Score } from '../domain/models/score';
+import { EvaluationUseCase } from '../domain/use_case/evaluation_usecase';
 
 interface EvaluationContextType {
   evaluations: Evaluation[];

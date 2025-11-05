@@ -2,16 +2,16 @@ import { SafeTop } from '@/components/ui/safe-top';
 import { useEvaluations } from '@/evaluations/context/evaluation_context';
 import { Evaluation } from '@/evaluations/domain/models/evaluation';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 
 export default function EvaluatePage() {

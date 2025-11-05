@@ -1,7 +1,7 @@
-import { IEvaluationRepository } from '../../domain/repositories/i_evaluation_repository';
-import { IEvaluationSource } from '../datasources/i_evaluation_source';
 import { Evaluation } from '../../domain/models/evaluation';
 import { Score } from '../../domain/models/score';
+import { IEvaluationRepository } from '../../domain/repositories/i_evaluation_repository';
+import { IEvaluationSource } from '../datasources/i_evaluation_source';
 
 export class EvaluationRepository implements IEvaluationRepository {
   constructor(private evalSource: IEvaluationSource) {}

@@ -1,6 +1,6 @@
-import { IEvaluationRepository } from '../repositories/i_evaluation_repository';
 import { Evaluation } from '../models/evaluation';
 import { Score } from '../models/score';
+import { IEvaluationRepository } from '../repositories/i_evaluation_repository';
 
 export class EvaluationUseCase {
   constructor(private repository: IEvaluationRepository) {}
