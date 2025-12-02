@@ -25,8 +25,8 @@ export default function CurrentCoursePage() {
   const [selected, setSelected] = useState(0);
   const [courseInfo, setCourseInfo] = useState<Awaited<ReturnType<typeof getCourseById>> | null>(null);
   const { categories, loadCategories, createCategory, deleteCategory } = useCategories();
-  const { getUserEvaluations } = useEvaluations();
-   const { fetchAllReports, fetchReportsByCategoryId } = useReports();
+  const { getUserEvaluations, evaluations, fetchAllEvaluations } = useEvaluations();
+  const { fetchAllReports, fetchReportsByCategoryId } = useReports();
   const [showCreate, setShowCreate] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
   const [userEvaluations, setUserEvaluations] = useState<any[]>([]);
@@ -42,7 +42,7 @@ export default function CurrentCoursePage() {
 
   useEffect(() => {
     // Load categories once when this screen mounts (for this course filtering)
-    loadCategories().catch(() => {});
+    loadCategories().catch(() => { });
   }, [loadCategories]);
 
   const isProfessor = useMemo(() => {
@@ -54,27 +54,31 @@ export default function CurrentCoursePage() {
     // Load reports if professor, or user evaluations if student
     if (courseInfo && user) {
       if (isProfessor) {
-         // Load reports for professors by fetching from all categories of the course
-         const courseCode = courseInfo.course.courseCode || '';
-         const courseCats = categories.filter(c => String(c.courseId ?? '') === String(courseCode));
-       
-         if (courseCats.length > 0) {
-           // Fetch reports for each category and combine them
-           Promise.all(
-             courseCats.map(cat => fetchReportsByCategoryId(cat.id || ''))
-           )
-             .then((reportsArrays) => {
-               const allReports = reportsArrays.flat();
-               setReports(allReports);
-               console.log('[CurrentCoursePage] Loaded reports:', allReports.length);
-             })
-             .catch((err) => {
-               console.error('[CurrentCoursePage] Error loading reports:', err);
-             });
-         } else {
-           console.log('[CurrentCoursePage] No categories found for course, no reports to load');
-           setReports([]);
-         }
+        // Load reports for professors by fetching from all categories of the course
+        const courseCode = courseInfo.course.courseCode || '';
+        const courseCats = categories.filter(c => String(c.courseId ?? '') === String(courseCode));
+
+        if (courseCats.length > 0) {
+          // Fetch reports for each category and combine them
+          Promise.all(
+            courseCats.map(cat => fetchReportsByCategoryId(cat.id || ''))
+          )
+            .then((reportsArrays) => {
+              const allReports = reportsArrays.flat();
+              setReports(allReports);
+              console.log('[CurrentCoursePage] Loaded reports:', allReports.length);
+            })
+            .catch((err) => {
+              console.error('[CurrentCoursePage] Error loading reports:', err);
+            });
+        } else {
+          console.log('[CurrentCoursePage] No categories found for course, no reports to load');
+          setReports([]);
+        }
+
+        // Fetch all evaluations (we will filter them in render)
+        fetchAllEvaluations().catch(err => console.error('[CurrentCoursePage] Error fetching evaluations:', err));
+
       } else {
         // Load user evaluations for students
         getUserEvaluations(String(user.id || ''))
@@ -87,7 +91,16 @@ export default function CurrentCoursePage() {
           });
       }
     }
-   }, [courseInfo, user, isProfessor, categories, fetchAllReports, fetchReportsByCategoryId, getUserEvaluations]);
+  }, [courseInfo, user, isProfessor, categories, fetchAllReports, fetchReportsByCategoryId, getUserEvaluations, fetchAllEvaluations]);
+
+  // Filter evaluations for this course (for professor view)
+  const courseEvaluations = useMemo(() => {
+    if (!courseInfo || evaluations.length === 0) return [];
+    const courseCode = courseInfo.course.courseCode || '';
+    const courseCats = categories.filter(c => String(c.courseId ?? '') === String(courseCode));
+    const courseCatIds = courseCats.map(c => c.id);
+    return evaluations.filter(e => courseCatIds.includes(e.categoryID));
+  }, [courseInfo, evaluations, categories]);
 
   const title = courseInfo?.course?.name || 'Curso';
 
@@ -119,6 +132,58 @@ export default function CurrentCoursePage() {
           <ScrollView contentContainerStyle={styles.container}>
             {isProfessor ? (
               <>
+                <View style={styles.rowBetween}>
+                  <Text style={styles.sectionTitle}>Evaluaciones</Text>
+                  <TouchableOpacity
+                    style={styles.addBtn}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/evaluations/create',
+                        params: { courseId: courseInfo?.course?.courseCode || '' }
+                      });
+                    }}
+                  >
+                    <Text style={styles.addText}>Crear</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.divider} />
+
+                {courseEvaluations.length === 0 ? (
+                  <View style={styles.placeholder}>
+                    <Text style={styles.placeholderText}>No hay evaluaciones creadas</Text>
+                  </View>
+                ) : (
+                  <View style={{ gap: 12, marginBottom: 24 }}>
+                    {courseEvaluations.map((evaluation) => (
+                      <TouchableOpacity
+                        key={evaluation.evaluationID}
+                        style={styles.evaluationCard}
+                        onPress={() => {
+                          router.push({
+                            pathname: '/evaluations/[id]',
+                            params: {
+                              id: evaluation.evaluationID,
+                              evaluation: JSON.stringify(evaluation),
+                            },
+                          } as any);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.evaluationName}>{evaluation.name}</Text>
+                          <Text style={styles.evaluationMeta}>
+                            Fecha: {new Date(evaluation.creationDate).toLocaleDateString()}
+                          </Text>
+                          <Text style={styles.evaluationMeta}>
+                            Visibilidad: {evaluation.visibility}
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={24} color="#999" />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
                 <Text style={styles.sectionTitle}>Reportes de Evaluación</Text>
                 <View style={styles.divider} />
                 {reports.length === 0 ? (
@@ -225,14 +290,14 @@ export default function CurrentCoursePage() {
               return (
                 <View style={{ gap: 10 }}>
                   {list.map((cat) => (
-                    <CategoryRow 
-                      key={cat.id} 
-                      cat={cat} 
-                      canDelete={isProfessor} 
+                    <CategoryRow
+                      key={cat.id}
+                      cat={cat}
+                      canDelete={isProfessor}
                       isProfessor={isProfessor}
                       onDelete={async () => {
                         if (cat.id) {
-                          try { await deleteCategory(cat.id); } catch {}
+                          try { await deleteCategory(cat.id); } catch { }
                         }
                       }}
                       onPress={() => {
@@ -276,15 +341,15 @@ export default function CurrentCoursePage() {
   );
 }
 
-function CategoryRow({ 
-  cat, 
-  canDelete, 
+function CategoryRow({
+  cat,
+  canDelete,
   isProfessor,
-  onDelete, 
-  onPress 
-}: { 
-  cat: Category; 
-  canDelete: boolean; 
+  onDelete,
+  onPress
+}: {
+  cat: Category;
+  canDelete: boolean;
   isProfessor: boolean;
   onDelete: () => void;
   onPress: () => void;
@@ -296,11 +361,11 @@ function CategoryRow({
         <Text style={styles.catMeta}>Método: {cat.groupingMethod} • Máx integrantes: {cat.maxMembers}</Text>
       </View>
       {canDelete && (
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={(e) => {
             e.stopPropagation();
             onDelete();
-          }} 
+          }}
           style={styles.deleteBtn}
         >
           <Text style={{ color: '#fff', fontWeight: '600' }}>Eliminar</Text>
@@ -323,14 +388,14 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: 'bold' },
   addBtn: { backgroundColor: 'rgba(224,224,224,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   addText: { fontWeight: 'bold', color: '#222' },
-  chipRow: { 
-    flexDirection: 'row', 
+  chipRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start', 
-    backgroundColor: 'rgba(43,213,243,0.15)', 
-    borderRadius: 10, 
-    paddingHorizontal: 12, 
-    paddingVertical: 4 
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(43,213,243,0.15)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 4
   },
   chipText: { color: darkBlue, fontWeight: '600', fontSize: 16 },
   bottomBar: { backgroundColor: '#fff', shadowColor: 'rgba(0,0,0,0.15)', shadowOpacity: 0.4, shadowRadius: 6, elevation: 6 },
@@ -342,12 +407,12 @@ const styles = StyleSheet.create({
   catMeta: { color: '#666', marginTop: 4 },
   deleteBtn: { backgroundColor: '#e53935', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8 },
   // Report styles
-  reportCard: { 
-    backgroundColor: '#fff', 
-    borderWidth: 1, 
-    borderColor: '#e0e0e0', 
-    borderRadius: 12, 
-    padding: 16, 
+  reportCard: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -359,19 +424,19 @@ const styles = StyleSheet.create({
   reportRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   reportLabel: { fontSize: 14, color: '#666', fontWeight: '600' },
   reportValue: { fontSize: 14, color: '#333' },
-  scoresGrid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    gap: 12, 
-    marginTop: 8 
+  scoresGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 8
   },
-  scoreItem: { 
-    flex: 1, 
-    minWidth: '45%', 
-    backgroundColor: '#f5f5f5', 
-    padding: 12, 
-    borderRadius: 8, 
-    alignItems: 'center' 
+  scoreItem: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center'
   },
   scoreLabel: { fontSize: 12, color: '#666', marginBottom: 4, textAlign: 'center' },
   scoreValue: { fontSize: 20, fontWeight: 'bold', color: '#B794F6' },
