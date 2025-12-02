@@ -12,8 +12,9 @@ export default function Central() {
   console.log('Central Component - isLoggedIn:', isLoggedIn, 'user:', user);
 
   if (isLoggedIn && user) {
-    return <Redirect href="/(tabs)" />;
+    return <Redirect href="/home" />;
   }
 
-  return <Redirect href="/login" />;
+  // Casting to any to avoid TypeScript error if Expo Router types are stale
+  return <Redirect href={"/login" as any} />;
 }

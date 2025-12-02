@@ -1,0 +1,27 @@
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+export default function CreateCourseCard({ onTap }: { onTap?: () => void }) {
+  return (
+    <TouchableOpacity onPress={onTap} activeOpacity={0.85}>
+      <View style={styles.card}>
+        <Text style={styles.plus}>＋</Text>
+        <Text style={styles.label}>Crear curso</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    width: 220,
+    height: 160,
+    borderRadius: 16,
+    backgroundColor: '#F0E8FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  plus: { fontSize: 32, color: '#7C4DFF' },
+  label: { marginTop: 8, fontWeight: 'bold', color: '#7C4DFF' },
+});

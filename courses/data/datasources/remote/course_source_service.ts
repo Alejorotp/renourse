@@ -195,6 +195,7 @@ export class CourseSourceService implements ICourseSource {
     console.log('[CourseSourceService] createCourse →', insUrl, { tableName: 'Course', records: [record] });
     const insRes = await this.post(insUrl, { tableName: 'Course', records: [record] });
     console.log('[CourseSourceService] createCourse ← status', insRes.status);
+    console.log('', insRes.body)
     if (insRes.status !== 201) throw new Error(`createCourse failed: ${insRes.status}`);
 
     // Add professor as member (role true if backend uses it)
