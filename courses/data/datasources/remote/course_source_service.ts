@@ -21,7 +21,7 @@ export class CourseSourceService implements ICourseSource {
     if (refreshClient) {
       return refreshClient.get(url);
     }
-    
+
     // Fallback to direct fetch
     const token = await this.getToken();
     const res = await fetch(url, { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
@@ -34,7 +34,7 @@ export class CourseSourceService implements ICourseSource {
     if (refreshClient) {
       return refreshClient.post(url, body);
     }
-    
+
     // Fallback to direct fetch
     const token = await this.getToken();
     const res = await fetch(url, {
@@ -152,7 +152,7 @@ export class CourseSourceService implements ICourseSource {
     if (!Array.isArray(arr) || arr.length === 0) return null;
     const mapped = mapCourseFromDB(arr[0]);
     const profName = await this.getUserNameById(String(mapped.professorId ?? ''));
-    
+
     // Fetch members for this course
     const membersUrl = `${DB_BASE}/${DB_NAME}/read?tableName=CourseMember&courseID=${encodeURIComponent(mapped.courseCode)}`;
     console.log('[CourseSourceService] fetchCourseById members →', membersUrl);
@@ -164,7 +164,7 @@ export class CourseSourceService implements ICourseSource {
       const memberIds = Array.isArray(memberArr) ? memberArr.map((m: any) => String(m.userID)) : [];
       memberNames = await Promise.all(memberIds.map(id => this.getUserNameById(id)));
     }
-    
+
     return { course: mapped, professorName: profName, memberNames };
   }
 
@@ -188,8 +188,6 @@ export class CourseSourceService implements ICourseSource {
       title: course.name ?? 'Curso',
       courseCode: code,
       professorID: course.professorId,
-      memberIDs: [],
-      categoryIDs: [],
     };
     const insUrl = `${DB_BASE}/${DB_NAME}/insert`;
     console.log('[CourseSourceService] createCourse →', insUrl, { tableName: 'Course', records: [record] });
@@ -199,15 +197,13 @@ export class CourseSourceService implements ICourseSource {
     if (insRes.status !== 201) throw new Error(`createCourse failed: ${insRes.status}`);
 
     // Add professor as member (role true if backend uses it)
-    try { await this.joinCourse({ courseCode: code, userId: String(course.professorId ?? '') }); } catch {}
+    try { await this.joinCourse({ courseCode: code, userId: String(course.professorId ?? '') }); } catch { }
 
     const mapped: Course = {
       id: code,
       courseCode: code,
       name: record.title,
       professorId: course.professorId,
-      memberIds: [],
-      categoryIds: [],
     };
     const profName = await this.getUserNameById(String(course.professorId ?? ''));
     return { course: mapped, professorName: profName, userRole: 'Profesor', memberNames: [profName] };
