@@ -17,12 +17,12 @@ async function get(url: string): Promise<Response> {
   if (refreshClient) {
     return refreshClient.get(url);
   }
-  
+
   const token = await getToken();
-  const res = await fetch(url, { 
-    headers: { 
-      'Authorization': token ? `Bearer ${token}` : '' 
-    } 
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': token ? `Bearer ${token}` : ''
+    }
   });
   return res;
 }

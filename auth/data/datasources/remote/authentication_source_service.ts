@@ -33,6 +33,44 @@ export class AuthenticationSourceService implements IAuthenticationSource {
       refreshToken: responseData.refreshToken,
     };
 
+    // Sync user to DB if missing
+    try {
+      const checkUrl = `${DB_URL}/read?tableName=AuthenticationUser&UID=${encodeURIComponent(authUser.id)}`;
+      const checkRes = await fetch(checkUrl, {
+        headers: { 'Authorization': `Bearer ${authUser.accessToken}` }
+      });
+
+      let userExists = false;
+      if (checkRes.ok) {
+        const list = await checkRes.json();
+        if (Array.isArray(list) && list.length > 0) {
+          userExists = true;
+        }
+      }
+
+      if (!userExists) {
+        console.log('[AuthenticationSourceService] User missing in DB, inserting...');
+        const insertRes = await fetch(`${DB_URL}/insert`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authUser.accessToken}`
+          },
+          body: JSON.stringify({
+            tableName: 'AuthenticationUser',
+            records: [{
+              UID: authUser.id,
+              name: authUser.name,
+              email: authUser.email
+            }]
+          })
+        });
+        console.log('[AuthenticationSourceService] User sync status:', insertRes.status);
+      }
+    } catch (e) {
+      console.error('[AuthenticationSourceService] Error syncing user to DB:', e);
+    }
+
     // Store tokens and user info securely
 
     await SecureStore.setItemAsync('user', JSON.stringify({
@@ -58,7 +96,54 @@ export class AuthenticationSourceService implements IAuthenticationSource {
     });
 
     console.log(`Sign up response status: ${response.status}`);
-    return response.status === 201;
+
+    if (response.status === 201) {
+      // We need to login to get the token to insert into DB, or use a master token if available.
+      // Since we don't have a token yet, we might rely on the user logging in afterwards to sync.
+      // However, the user requested sync on signup. 
+      // The signup-direct endpoint might return a token? Let's check the logs or assume we need to login.
+      // If signup-direct doesn't return a token, we can't insert into DB immediately unless the DB is open.
+      // Assuming DB requires auth.
+      // Strategy: Login immediately after signup to get token and sync.
+
+      try {
+        // Auto-login to sync
+        const loginRes = await fetch(`${AUTH_URL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, password: user.password })
+        });
+
+        if (loginRes.ok) {
+          const loginData = await loginRes.json();
+          const token = loginData.accessToken;
+          const uid = loginData.user.id;
+
+          console.log('[AuthenticationSourceService] Syncing new user to DB...');
+          await fetch(`${DB_URL}/insert`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              tableName: 'AuthenticationUser',
+              records: [{
+                UID: uid,
+                name: user.name,
+                email: user.email
+              }]
+            })
+          });
+        }
+      } catch (e) {
+        console.error('[AuthenticationSourceService] Error syncing new user:', e);
+      }
+
+      return true;
+    }
+
+    return false;
   }
 
   async logOut(): Promise<boolean> {
