@@ -4,7 +4,7 @@ import { ReportUseCase } from '../domain/use_case/report_usecase';
 export class ReportController {
   private reports: Report[] = [];
 
-  constructor(private reportUseCase: ReportUseCase) {}
+  constructor(private reportUseCase: ReportUseCase) { }
 
   async fetchAllReports(courseId: string): Promise<Report[]> {
     try {
@@ -78,6 +78,33 @@ export class ReportController {
       console.error('[ReportController] Error deleting report:', e);
       throw e;
     }
+  }
+
+  groupAverageScore(groupId: string): number[] {
+    const groupReports = this.reports.filter(r => r.groupId === groupId);
+    return this.calculateAverages(groupReports);
+  }
+
+  userAverageScore(userId: string, filters?: { groupId?: string }): number[] {
+    let userReports = this.reports.filter(r => r.userId === userId);
+    if (filters?.groupId) {
+      userReports = userReports.filter(r => r.groupId === filters.groupId);
+    }
+    return this.calculateAverages(userReports);
+  }
+
+  private calculateAverages(reports: Report[]): number[] {
+    if (reports.length === 0) return [0, 0, 0, 0];
+    const sum = reports.reduce(
+      (acc, r) => [
+        acc[0] + r.punctuality,
+        acc[1] + r.contributions,
+        acc[2] + r.commitment,
+        acc[3] + r.attitude,
+      ],
+      [0, 0, 0, 0]
+    );
+    return sum.map(s => s / reports.length);
   }
 
   getReports(): Report[] {

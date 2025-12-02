@@ -171,7 +171,7 @@ export default function GroupDetailScreen() {
     const renderMemberItem = ({ item: memberId }: { item: string }) => {
         const memberName = memberNames[memberId] || 'Cargando...';
         const userAvg = userAverageScore(memberId, { groupId: group.id });
-        const isMe = user?.id === memberId;
+        const isMe = String(user?.id) === memberId;
 
         // Show scores if:
         // 1. User is professor (canEdit)

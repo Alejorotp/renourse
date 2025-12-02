@@ -25,6 +25,8 @@ interface ReportContextType {
   fetchReportsByEvaluationId: (evaluationId: string) => Promise<Report[]>;
   fetchReportsByCategoryId: (categoryId: string) => Promise<Report[]>;
   deleteReport: (id: string, courseId?: string) => Promise<void>;
+  groupAverageScore: (groupId: string) => number[];
+  userAverageScore: (userId: string, filters?: { groupId?: string }) => number[];
 }
 
 const ReportContext = createContext<ReportContextType | undefined>(undefined);
@@ -74,6 +76,20 @@ export const ReportProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     [controller]
   );
 
+  const groupAverageScore = useCallback(
+    (groupId: string): number[] => {
+      return controller.groupAverageScore(groupId);
+    },
+    [controller]
+  );
+
+  const userAverageScore = useCallback(
+    (userId: string, filters?: { groupId?: string }): number[] => {
+      return controller.userAverageScore(userId, filters);
+    },
+    [controller]
+  );
+
   return (
     <ReportContext.Provider
       value={{
@@ -83,6 +99,8 @@ export const ReportProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         fetchReportsByEvaluationId,
         fetchReportsByCategoryId,
         deleteReport,
+        groupAverageScore,
+        userAverageScore,
       }}
     >
       {children}
